@@ -14,7 +14,7 @@ Password-only service accounts are a **high-risk security vulnerability**:
 - **Compliance risk**: Snowflake Trust Center flags this as a **critical finding** because it violates security best practices for non-human identities.
 - **Lateral movement risk**: Compromised service account credentials can give attackers persistent, automated access to your Snowflake environment.
 
-Migrating to **key-pair authentication** (RSA) or converting SPCS users to the modern **SERVICE** type eliminates these risks by removing password-based access entirely.
+Migrating to **key-pair authentication** (RSA) and removing passwords — or, for SPCS users, moving to SERVICE type **after** password removal — eliminates these risks by removing password-based access entirely.
 
 ## What This Script Does
 Remediates the Trust Center critical finding by migrating `LEGACY_SERVICE` users off password-only authentication. Handles two categories:
@@ -22,14 +22,16 @@ Remediates the Trust Center critical finding by migrating `LEGACY_SERVICE` users
 | User Type | Identified By | Remediation |
 |-----------|--------------|-------------|
 | Regular service accounts | `LEGACY_SERVICE` + password-only | Migrate to RSA key-pair auth, then remove password |
-| SPCS service users | Name pattern `SVC_%_ENDPOINT_%` | Convert type: `ALTER USER SET TYPE = SERVICE` |
+| SPCS service users | Name pattern `SVC_%_ENDPOINT_%` | 1) Add key-pair/OAuth/WIF and update SPCS config; 2) `UNSET PASSWORD`; 3) Optionally `SET TYPE = SERVICE` |
 
 ## How to Run
 
 1. Run **Steps 1-3** (SELECT queries) to identify affected users
 2. Replace `<USER_NAME>` / `<SPCS_USER_NAME>` placeholders with actual names from the results
-3. Uncomment and run the relevant ALTER statements (Step 4 or 5)
-4. Run **Steps 7-8** to verify — zero rows = finding cleared
+3. For **regular service accounts** (Step 4): Set RSA key, verify, then unset password
+4. For **SPCS users** (Step 5): Add key-pair/OAuth/WIF, update SPCS config, verify, unset password, then optionally `SET TYPE = SERVICE`
+5. **WARNING**: Do NOT run `SET TYPE = SERVICE` on SPCS users before removing their password — this will break SPCS auth immediately
+6. Run **Steps 7-8** to verify — zero rows = finding cleared
 
 ## Notes
 - `snowflake.account_usage.users` has **~2 hour latency** — use `SHOW USERS` (Step 7) for real-time verification

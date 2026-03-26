@@ -39,7 +39,7 @@ WHERE type = 'LEGACY_SERVICE'
 
 -- ============================================================
 -- STEP 3: Identify SPCS service users
---         These need TYPE conversion to SERVICE
+--         These need safe auth migration BEFORE type conversion
 -- ============================================================
 SELECT
     name,
@@ -66,9 +66,30 @@ WHERE type = 'LEGACY_SERVICE'
 -- ALTER USER "<USER_NAME>" UNSET PASSWORD;
 
 -- ============================================================
--- STEP 5: For SPCS users — convert from LEGACY_SERVICE to SERVICE type
---         This resolves the Trust Center finding without key-pair migration
+-- STEP 5: For SPCS users — safe migration (DO NOT just SET TYPE = SERVICE)
+--         WARNING: SPCS users are currently LEGACY_SERVICE + password-only.
+--         Flipping to TYPE = SERVICE without removing the password first
+--         will hard-block SPCS logins immediately.
+--
+--         Safe order:
+--         5a) Add key-pair / OAuth / WIF to the SPCS user
+--         5b) Update SPCS config to use the new auth method
+--         5c) Validate SPCS is working WITHOUT passwords
+--         5d) Remove the password
+--         5e) (Optional) Convert type to SERVICE after password is gone
 -- ============================================================
+-- 5a) Add key-pair auth to SPCS user:
+-- ALTER USER "<SPCS_USER_NAME>" SET RSA_PUBLIC_KEY = '<PUBLIC_KEY_CONTENTS>';
+
+-- 5b) Update SPCS service/endpoint config to use key-pair auth
+--     (this is done outside Snowflake — in your SPCS deployment config)
+
+-- 5c) Validate SPCS is working with the new auth method
+
+-- 5d) Remove password after validation:
+-- ALTER USER "<SPCS_USER_NAME>" UNSET PASSWORD;
+
+-- 5e) (Optional) Convert to modern SERVICE type:
 -- ALTER USER "<SPCS_USER_NAME>" SET TYPE = SERVICE;
 
 -- ============================================================
