@@ -5,6 +5,17 @@
 - Scanner: `SECURITY_ESSENTIALS_STRONG_AUTH_LEGACY_SERVICE_USERS_READINESS`
 - Package: `SECURITY_ESSENTIALS`
 
+## Why This Is Critical
+
+Password-only service accounts are a **high-risk security vulnerability**:
+
+- **Credential stuffing & brute force**: Passwords can be guessed, leaked, or stolen. Service accounts with password-only auth are prime targets.
+- **No MFA support**: Service accounts cannot use MFA, making passwords their sole line of defense.
+- **Compliance risk**: Snowflake Trust Center flags this as a **critical finding** because it violates security best practices for non-human identities.
+- **Lateral movement risk**: Compromised service account credentials can give attackers persistent, automated access to your Snowflake environment.
+
+Migrating to **key-pair authentication** (RSA) or converting SPCS users to the modern **SERVICE** type eliminates these risks by removing password-based access entirely.
+
 ## What This Script Does
 Remediates the Trust Center critical finding by migrating `LEGACY_SERVICE` users off password-only authentication. Handles two categories:
 
